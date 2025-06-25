@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>🎥 Filmes em Cartaz</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(-45deg, #eee);
+      background-size: 400% 400%;
+      animation: gradientBackground 15s ease infinite;
+      color: #f7f6f6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    @keyframes gradientBackground {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    header {
+      background-color: rgba(128, 0, 128);
+      padding: 1rem;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    #searchInput {
+      padding: 0.5rem;
+      width: 60%;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: none;
+    }
+
+    #filters select {
+      padding: 0.5rem;
+      margin: 0.5rem;
+      border-radius: 6px;
+      border: none;
+    }
+
+    main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 1rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .movie-card {
+      background-color: rgba(128, 0, 128);
+      margin: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      width: 200px;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .movie-card img {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .movie-card button {
+      margin-top: 10px;
+      background-color: #0af;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .movie-details {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    iframe {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .character {
+      position: absolute;
+      width: 80px;
+      opacity: 0.3;
+      z-index: 1;
+    }
+
+    @keyframes moveLeftRight {
+      0% { left: -100px; }
+      100% { left: 110%; }
+    }
+
+    @keyframes moveRightLeft {
+      0% { left: 110%; }
+      100% { left: -100px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎟️ A Disposição do Público</h1>
+    <input type="text" id="searchInput" placeholder="Pesquise seu filme aqui...">
+
+    <div id="filters">
+      <select id="categoryFilter">
+         <option value="">Filtrar Categoria</option>
+        <option value=>Ação</option>
+        <option value=>Aventura</option>
+        <option value=>Suspense</option>
+        <option value=>Terror</option>
+        <option value=>Animação</option>
+      </select>
+
+      <div id="filters">
+      <select id="classificationFilter">
+         <option value="">Filtrar Classificação</option>
+        <option value=>+18</option>
+        <option value=>-18</option>
+      </select>
+
+      <div id="filters">
+      <select id="languagesFilter">
+         <option value="">Filtrar Linguagem</option>
+        <option value=>Dublado</option>
+        <option value=>Legendado</option>
+      </select>
+
+    <div id="filters">
+      <select id="ratingFilter">
+        <option value="">Filtrar Avaliação</option>
+        <option value="high">Melhores avaliados</option>
+        <option value="low">Piores avaliados</option>
+      </select>
+
+      <select id="yearFilter">
+        <option value="">Filtrar Período</option>
+        <option value="2025">Lançados este ano</option>
+          <option value=>Em breve nos cinemas</option>
+      </select>
+
+      <select id="popularityFilter">
+        <option value="">Filtrar Assistido</option>
+        <option value="high">Mais assistidos</option>
+        <option value="low">Menos assistidos</option>
+      </select>
+    </div>
+  </header>
+
+  <main id="moviesContainer"></main>
+
+  <script>
+    const API_KEY = 'd29e79bb675e164fc1f28decd659e21c'; 
+    const BASE_URL = 'https://api.themoviedb.org/3';
+    const moviesContainer = document.getElementById('moviesContainer');
+    const searchInput = document.getElementById('searchInput');
+
+    async function fetchMovies(url) {
+      const response = await fetch(url);
+      const data = await response.json();
+      displayMovies(data.results);
+    }
+
+    function displayMovies(movies) {
+      moviesContainer.innerHTML = '';
+      movies.forEach(movie => {
+        const movieEl = document.createElement('div');
+        movieEl.classList.add('movie-card');
+        movieEl.innerHTML = `
+          <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}" />
+          <h3>${movie.title}</h3>
+          <p>Nota: ${movie.vote_average}</p>
+          <button onclick="toggleDetalhes(${movie.id}, this)">Ver detalhes</button>
+          <div id="detalhes-${movie.id}" class="movie-details" style="display: none;"></div>
+        `;
+        moviesContainer.appendChild(movieEl);
+      });
+    }
+
+    async function toggleDetalhes(id, btn) {
+      const detalheDiv = document.getElementById(`detalhes-${id}`);
+
+      if (detalheDiv.style.display === 'none') {
+        const [detalhes, creditos, videos] = await Promise.all([
+          fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=pt-BR`).then(res => res.json()),
+          fetch(`${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}&language=pt-BR`).then(res => res.json()),
+          fetch(`${BASE_URL}/movie/${id}/videos?api_key=${API_KEY}&language=pt-BR`).then(res => res.json())
+        ]);
+
+        const elenco = creditos.cast.slice(0, 5).map(ator => ator.name).join(', ') || 'Informação indisponível';
+        const trailer = videos.results.find(v => v.type === "Trailer" && v.site === "YouTube");
+        const embedTrailer = trailer
+          ? `<iframe height="250" src="https://www.youtube.com/embed/${trailer.key}" frameborder="0" allowfullscreen></iframe>`
+          : 'Trailer não disponível.';
+
+        detalheDiv.innerHTML = `
+          <p><strong>Sinopse:</strong> ${detalhes.overview || 'Sinopse não disponível.'}</p>
+          <p><strong>Elenco:</strong> ${elenco}</p>
+          <p><strong>Trailer:</strong><br>${embedTrailer}</p>
+        `;
+        detalheDiv.style.display = 'block';
+        btn.innerText = 'Ocultar detalhes';
+      } else {
+        detalheDiv.style.display = 'none';
+        btn.innerText = 'Ver detalhes';
+      }
+    }
+
+    function applyFilters() {
+      let url = `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=pt-BR&sort_by=popularity.desc`;
+
+      const rating = document.getElementById('ratingFilter').value;
+      const year = document.getElementById('yearFilter').value;
+      const popularity = document.getElementById('popularityFilter').value;
+
+      if (rating === 'high') url += '&vote_average.gte=7.5';
+      if (rating === 'medium') url += '&vote_average.gte=5&vote_average.lte=7.4';
+      if (rating === 'low') url += '&vote_average.lte=5';
+
+      if (year) url += `&primary_release_year=${year}`;
+
+      if (popularity === 'high') url += '&sort_by=popularity.desc';
+      if (popularity === 'low') url += '&sort_by=popularity.asc';
+
+      fetchMovies(url);
+    }
+
+    document.getElementById('ratingFilter').addEventListener('change', applyFilters);
+    document.getElementById('yearFilter').addEventListener('change', applyFilters);
+    document.getElementById('popularityFilter').addEventListener('change', applyFilters);
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.toLowerCase();
+      fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${query}&language=pt-BR`)
+        .then(res => res.json())
+        .then(data => displayMovies(data.results));
+    });
+
+    fetchMovies(`${BASE_URL}/movie/now_playing?api_key=${API_KEY}&language=pt-BR&page=1`);
+  </script>
+
+ 
